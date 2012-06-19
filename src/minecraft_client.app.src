@@ -1,0 +1,12 @@
+{application, minecraft_client,
+ [
+  {description, "A Minecraft Client Stack in Erlang"},
+  {vsn, "0.0.1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, { minecraft_client_app, []}},
+  {env, []}
+ ]}.
