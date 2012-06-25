@@ -45,10 +45,28 @@
 -define(MCP_MD_SLOT,5).  %% short, byte, short
 -define(MCP_MD_THREE_INT,6).  %% int, int, int
 
+-define(MCP_MD_END,127).  %% End of metadata marker
 
-header(Header) when is_binary(Header) ->
+-record(emd_header,{type,key}).
+
+
+decode(MCBinary)->
+    decode(MCBinary,[]);
+decode(MCBinary, Remainder, Results) ->
+    <<HeaderValue,Remainder/binary>> = MCBinary,
+    case HeaderValue of
+	?MCP_MD_END ->
+	    {Results, Remainder};
+	_ -> Header = get_header(HeaderByte),
+	     
+	
+
+
+get_header(Header) when is_binary(Header) ->
     <<Type:3,Key:5>> = Header,
-    get_type(Type).
+    get_type(Type),
+    Header = #emd_header{type=Type,key=Key},
+    Header.
 
 
 get_type(Type) when is_integer(Type),
@@ -99,5 +117,3 @@ set_type(Type,Header) when is_integer(Type),
     <<_OldType:3,Key:5>> = Header,
     NewHeader = <<Type:3,Key:5>>,
     NewHeader.
-
-
