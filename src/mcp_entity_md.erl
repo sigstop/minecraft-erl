@@ -45,30 +45,59 @@
 -define(MCP_MD_SLOT,5).  %% short, byte, short
 -define(MCP_MD_THREE_INT,6).  %% int, int, int
 
--define(MCP_MD_END,127).  %% End of metadata marker
+%% unpack(MCBinary) ->
+%%    unpack(MCBinary,{[],<<>>}).
+%% unpack(MCBinary,Result) ->
+%%    <<Header,Remainder/binary>> = MCBinary,
+%%    case Header of
+%%	127 -> Result;
+%%	_ -> 
 
--record(emd_header,{type,key}).
-
-
-decode(MCBinary)->
-    decode(MCBinary,[]);
-decode(MCBinary, Remainder, Results) ->
-    <<HeaderValue,Remainder/binary>> = MCBinary,
-    case HeaderValue of
-	?MCP_MD_END ->
-	    {Results, Remainder};
-	_ -> Header = get_header(HeaderByte),
-	     
-	
+%% unpack_type(MCBinary,Result) ->
+%%    <<Header:8/binary,Remainder/binary>> = MCBinary,
+    
+	    
 
 
-get_header(Header) when is_binary(Header) ->
+header(Header) when is_binary(Header) ->
     <<Type:3,Key:5>> = Header,
-    get_type(Type),
-    Header = #emd_header{type=Type,key=Key},
-    Header.
+    {get_key(Key),get_type(Type)}.
 
+get_key(Key)->
+    case Key of
+	0 -> flags;
+	1 -> drowning_counter;
+	8 -> potion_effects;
+	12 -> animals;
+	_ -> unknown
+    end.
 
+get_key_mob(Mob,Key)->
+    case {Mob,Key} of
+	{creeper,16} -> status;
+	{spider, 16} -> aggression;
+	{cave_spider, 16}  -> agression;
+	{slime, 16} -> size;
+	{magma_cube, 16} -> size;
+	{ghast, 16}  -> agression;
+	{enderman, 16} -> item_in_hand;
+	{enderman, 17} -> agression;	    
+	{blaze, 16} -> attacking;
+	{ender_dragon, 16} -> health;
+	{pig, 16} -> saddled;
+	{sheep, 16} -> wool;
+	{wolf, 16} -> flags;		      
+	{wolf, 17} -> owner;
+	{wolf, 19} -> health;
+	{ocelot, 16} -> flags;
+	{ocelot, 17} -> owner;
+	{ocelot, 18} -> skin;
+	{villager, 16} -> aggression;
+	{iron_golem, 16} -> agression
+    end.
+	
+		       
+	      
 get_type(Type) when is_integer(Type),
 		    Type >= ?MCP_MD_BYTE,
 		    Type =< ?MCP_MD_THREE_INT ->
@@ -117,3 +146,5 @@ set_type(Type,Header) when is_integer(Type),
     <<_OldType:3,Key:5>> = Header,
     NewHeader = <<Type:3,Key:5>>,
     NewHeader.
+
+
