@@ -39,7 +39,7 @@ write_packet(Message = {ID, ValueTuples})->
     io:format("To Server:~n~p~n",[Message]),
     Values = set_values( {ID, ValueTuples}, encode),
     Packet = encode( ID, Values),
-    io:format("To Server (Binary):~n~p~n",[Packet]),
+%    io:format("To Server (Binary):~n~p~n",[Packet]),
     Packet.
 
 read_packet(Packet)->
@@ -52,14 +52,18 @@ read_packet(Packet, Messages)->
 	<<>> -> 
 	    Messages;
 	_ ->
-	    io:format("From Server (Binary):~n~p~n",[Packet]),
-	    <<IDNum:?MCP_MSG_TYPE_BITS,MCBinary/binary>> = Packet,
-	    {{IDNum, ValueTuples},{remainder,Remainder}} = decode(IDNum, MCBinary),
-	    ID = get_schema_name(IDNum),
-	    Message = {ID, ValueTuples},
-	    io:format("From Server:~n~p~n",[Message]),
-	    NewMessages = lists:append(Messages,[Message]),
-	    read_packet(Remainder,NewMessages)
+	    try
+%		io:format("From Server (Binary):~n~p~n",[Packet]),
+		<<IDNum:?MCP_MSG_TYPE_BITS,MCBinary/binary>> = Packet,
+		{{IDNum, ValueTuples},{remainder,Remainder}} = decode(IDNum, MCBinary),
+		ID = get_schema_name(IDNum),
+		Message = {ID, ValueTuples},
+%		io:format("From Server:~n~p~n",[Message]),
+		NewMessages = lists:append(Messages,[Message]),
+		read_packet(Remainder,NewMessages)
+	    catch
+		Error -> {Messages,Error,{remainder,Packet}}
+	    end
     end.
 
 
@@ -121,7 +125,7 @@ set_value_at_pos(Position,Value,Values)->
 
 
 decode(ID, ValuesBin) when is_atom(ID) ->
-    NumID = get_schema_num(ID),   
+    NumID = get_schema_num(ID),
     decode( NumID, ValuesBin);
 decode( ID, MCBinary ) when is_integer(ID)->
     SchemaLength = get_schema_length(ID),
@@ -211,6 +215,9 @@ short(Direction,Value)->
 int(Direction,Value)->
     integer_number(Direction,Value,?MCP_INT_BITS).
 
+three_int(Direction,Value)->
+    ok.
+
 long(Direction,Value)->
     integer_number(Direction,Value,?MCP_LONG_BITS).
 
@@ -219,8 +226,6 @@ float(Direction,Value)->
 
 double(Direction,Value)->
     float_number(Direction,Value,?MCP_DOUBLE_BITS).
- 
-
 
 string(Direction,Value)->
     case Direction of
@@ -232,7 +237,10 @@ string(Direction,Value)->
 	    mc_binary_to_string(Value)			       		
     end.
 
-byte(Direction,Value)->
+string16(Direction,Value) ->
+    ok.
+
+byte(Direction,Value) ->
     case Direction of
 	encode when Value == empty ->
 	    <<0:?MCP_SIGN_BIT,0:?MCP_BYTE_BITS>>;
@@ -268,6 +276,8 @@ ubyte(Direction,Value)->
 	    {UIntValue,Remainder}
     end.
 
+slot(Direction,Value) ->
+    ok.
 
 
 string_to_mc_binary(String)->
@@ -284,10 +294,13 @@ string_to_mc_binary(String)->
 mc_binary_to_string(MCBinary)->
     <<StrLength:?MCP_STRLEN_BITS,StringRemainder/binary>> = MCBinary,
     Length = StrLength * ?MCP_BYTES_PER_CHAR,
-    <<String:Length/binary,Remainder/binary>> = StringRemainder,
-    StringBin = unicode:characters_to_binary(String,?MCP_ENCODING,?NATIVE_ENCODING),
-    Value = binary:bin_to_list(StringBin),
-    {Value,Remainder}.
+    case StringRemainder of
+	<<String:Length/binary,Remainder/binary>> ->
+	    StringBin = unicode:characters_to_binary(String,?MCP_ENCODING,?NATIVE_ENCODING),
+	    Value = binary:bin_to_list(StringBin),
+	    {Value,Remainder};
+	_ -> throw({parse_error,MCBinary})
+    end.
     
 
     
@@ -303,7 +316,7 @@ get_schema(ID) when is_integer(ID) ->
 	   end,
     Schemas = lists:filter(Find,mc_protocol()),
     case Schemas of
-	[] -> {no_schema_type,ID};
+	[] -> throw({no_schema_type,ID});
 	[Schema] -> Schema
     end;
 get_schema(ID) when is_atom(ID) ->

@@ -12,6 +12,8 @@
 
 -behavior(gen_server).
 
+-compile([export_all]).
+
 %% API
 -export([start_link/1,
 	 connect/0,
@@ -36,6 +38,8 @@ start_link(_Args) ->
     gen_server:start_link(?MODULE, _Args, []),
     ok.
 
+start() ->
+    spawn(?MODULE, connect, []).
 
 %% @doc Connect to a Minecraft server on the localhost with at default port of 25565
 -spec connect() -> ok.
@@ -54,7 +58,8 @@ connect(Server, Port, Username)->
     receive
 	{tcp, _RSocket, RPacket} -> ok
     end,
-    %%HandshakeResponse = mcp:read_packet(RPacket),
+    HandshakeResponse = mcp:read_packet(RPacket),
+    io:format("From Server:~n~p~n",[HandshakeResponse]),
     LoginPacket = mcp:write_packet({login_request,
 				       [{proto_version,?DEFAULT_MC_PROTO_VERSION},
 					{username,Username}]}),					     
@@ -62,10 +67,52 @@ connect(Server, Port, Username)->
     receive
 	{tcp, _RSocket2, RPacket2} -> ok
     end,
-    %%LoginResponse = mcp:read_packet(RPacket2),
+    LoginResponse = mcp:read_packet(RPacket2),
+    io:format("From Server:~n~p~n",[LoginResponse]),
+%    mcp:write_packet({keep_alive,
+%		      [{keep_alive_id, 0}]}),
+%    receive
+%	{tcp, _RSocket3, RPacket3} -> ok
+%    end,
+%    Response3 = mcp:read_packet(RPacket3),
+%    io:format("From Server:~n~p~n",[Response3]).
+
+    timer(),    
+    run(Sock).
+
+run(Sock) ->
     receive
-	{tcp, _RSocket3, RPacket3} -> ok
+	{tcp, _RSocket, RPacket} ->
+	    try
+		Response = mcp:read_packet(RPacket)
+		%io:format("From Server:~n~p~n",[Response])
+	    catch
+		Error -> io:format("Error: ~p~n",Error)
+	    end,
+	    run(Sock);
+	{to_server,Message} ->
+	    MessagePacket = mcp:write_packet(Message),
+	    ok = gen_tcp:send(Sock,MessagePacket),
+	    run(Sock);
+	timer_expire -> KeepAlivePacket = mcp:write_packet({keep_alive,
+					  [{keep_alive_id, 0}]}),
+			ok = gen_tcp:send(Sock, KeepAlivePacket),
+			run(Sock)
     end.
+
+timer() ->
+    spawn(?MODULE, timer, [self()]).
+timer(Pid) ->
+    receive
+	reset -> timer(Pid)
+    after
+	5000 ->
+	    Pid ! timer_expire,
+	    timer(Pid)
+    end.
+    
+move(Pid, X, Y, Z, Grounded) ->
+    Pid ! {to_server,{player_position,[{x,X},{y,Y},{stance,Y},{z,Z},{on_ground,Grounded}]}}.
     
 %%%-----------------------------------------------------------------------------
 %%% gen_server callbacks

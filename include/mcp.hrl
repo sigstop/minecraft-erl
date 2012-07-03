@@ -64,7 +64,14 @@
  [], %% One way
  [x,   y,   z],  %% From Server (Decode)
  [int, int, int],
- 6},
+ 16#06},
+
+{%% Player Position 0x0B
+ player_position,
+ [x,      y,      stance, z,      on_ground],  %% To Server
+ [x,      y,      stance, z,      on_ground],  %% From Server
+ [double, double, double, double, bool],
+ 16#0b},  
 
 {%% Spawn Mob 0x18
  spawn_mob,
@@ -73,12 +80,68 @@
  [int,       byte, int, int, int, byte, byte,  byte,     byte],
  16#18},
 
-{%% Entity_Velocity 0x1C
+{%% Entity Velocity 0x1C
  entity_velocity,
  [], %% One way
  [entity_id, x,     y,     z], %% From Server
  [int,       short, short, short],
  16#1c},
+
+{%% Entity Relative Move 0x1F
+ entity_relative_move,
+ [], %% One way
+ [eid, dx,   dy,   dz],  %% From Server
+ [int, byte, byte, byte],
+ 16#1F},
+
+{%% Entity Look 0x20
+ entity_look,
+ [], %% One way
+ [eid, yaw,  pitch],  %% From Server
+ [int, byte, byte],
+ 16#20},
+
+{%% Entity Look and Relative Move 0x21
+ entity_look_and_relative_move,
+ [], %% One way
+ [eid, dx,   dy,   dz,   yaw,  pitch],  %% From Server
+ [int, byte, byte, byte, byte, byte],
+ 16#21},
+
+{%% Entity Teleport 0x22
+ entity_teleport,
+ [], %% One way
+ [eid, x,   y,   z,   yaw,  pitch],  %% From Server
+ [int, int, int, int, byte, byte],
+ 16#22},
+
+{%% Entity Head 0x23
+ entity_look_and_relative_move,
+ [], %% One way
+ [eid, head_yaw],  %% From Server
+ [int, byte],
+ 16#23},
+
+{%% Map Column Allocation 0x32
+ map_column_allocation,
+ [], %% One way
+ [x,   y,   mode], %% From Server
+ [int, int, bool],
+ 16#32},
+
+{%% New Block Type 0x35
+ new_block_type,
+ [], %% One way
+ [x,   y,    z,   block_type, block_metdata], %% From Server
+ [int, byte, int, byte,       byte],
+ 16#35},
+
+{%% Change Game State 0x46
+  change_game_state,
+  [], %% One way
+  [reason, game_mode], %% From Server
+  [byte,   byte],
+  16#46},
 
 {%% Player Abilities 0xCA
  player_abilities,

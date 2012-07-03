@@ -53,8 +53,12 @@
 %%	127 -> Result;
 %%	_ -> 
 
-%% unpack_type(MCBinary,Result) ->
-%%    <<Header:8/binary,Remainder/binary>> = MCBinary,
+unpack_type(MCBinary,Result) ->
+    <<Header:8/binary,Remainder/binary>> = MCBinary,
+    {Key,Type} = header(Header),
+    ValueBinary = mcp:Type(decode,MCBinary),
+    ValueBinary.
+    
     
 	    
 
