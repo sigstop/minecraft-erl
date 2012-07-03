@@ -111,11 +111,14 @@ timer(Pid) ->
 	    timer(Pid)
     end.
     
-move(Pid, X, Y, Z, Grounded) ->
-    Pid ! {to_server,{player_position,[{x,X},{y,Y},{stance,Y},{z,Z},{on_ground,Grounded}]}}.
-
 chat(Pid, Message) ->
     Pid ! {to_server,{chat_message,[{message,Message}]}}.
+
+move(Pid, X, Y, Z, Grounded) ->
+    Pid ! {to_server,{player_position,[{x,X},{y,Y},{stance,Y+1},{z,Z},{on_ground,Grounded}]}}.
+
+quit(Pid) ->
+    Pid ! {to_server,{disconnect,[{reason,"done"}]}}.
     
 %%%-----------------------------------------------------------------------------
 %%% gen_server callbacks
