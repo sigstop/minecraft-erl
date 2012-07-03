@@ -36,14 +36,14 @@
  [username_and_host], %% To Server (Encode)
  [connection_hash],  %% From Server (Decode)
  [string],
- 2},
+ 16#2},
 
 {%% Chat Message 0x03
  chat_message,
- [message], %% To Server (Encode)
- [message],  %% From Server (Decode)
+ [message], %% To Sever
+ [message], %% From Server
  [string],
- 3},
+ 16#3},
 
 {%% Time Update 0x04
  time_update,
@@ -148,6 +148,13 @@
  [invulnerability, is_flying, can_fly, instant_destroy], %% To Server
  [invulnerability, is_flying, can_fly, instant_destroy], %% From Server
  [bool,            bool,      bool,    bool],
- 16#ca}
+ 16#ca},
+
+{%% Disconnect 0xFF
+ disconnect,
+ [reason], %% To Server
+ [reason], %% From Server
+ [string],
+ 16#ff}
 
 ]). %% End 

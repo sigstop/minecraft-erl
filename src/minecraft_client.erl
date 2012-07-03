@@ -113,6 +113,9 @@ timer(Pid) ->
     
 move(Pid, X, Y, Z, Grounded) ->
     Pid ! {to_server,{player_position,[{x,X},{y,Y},{stance,Y},{z,Z},{on_ground,Grounded}]}}.
+
+chat(Pid, Message) ->
+    Pid ! {to_server,{chat_message,[{message,Message}]}}.
     
 %%%-----------------------------------------------------------------------------
 %%% gen_server callbacks
