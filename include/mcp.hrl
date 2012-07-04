@@ -68,10 +68,24 @@
 
 {%% Player Position 0x0B
  player_position,
- [x,      y,      stance, z,      on_ground],  %% To Server
+ [],  %% One Way
  [x,      y,      stance, z,      on_ground],  %% From Server
  [double, double, double, double, bool],
- 16#0b},  
+ 16#0b},
+
+{%% Player Position 0x0C
+ player_look,
+ [], %% One Way
+ [yaw,   pitch, on_ground], %% From Server
+ [float, float, bool],
+ 16#0c},  
+
+{%% Player Position & Look 0x0D
+ player_position_and_look,
+ [x,      y,      stance, z,      yaw,   pitch, on_ground], %% To Server
+ [x,      stance, y,      z,      yaw,   pitch, on_ground], %% From Server
+ [double, double, double, double, float, float, bool],
+ 16#0d},
 
 {%% Spawn Mob 0x18
  spawn_mob,

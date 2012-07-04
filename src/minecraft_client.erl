@@ -84,8 +84,14 @@ run(Sock) ->
     receive
 	{tcp, _RSocket, RPacket} ->
 	    try
-		Response = mcp:read_packet(RPacket)
-		%io:format("From Server:~n~p~n",[Response])
+		Response = mcp:read_packet(RPacket),
+	        %io:format("From Server:~n~p~n",[Response]),
+		case Response of 
+		    {Results,_Error,_Remaider} -> ok;
+		    _ -> Results = Response
+		end,
+		handle_results(Sock,Results),
+		run(Sock)
 	    catch
 		Error -> io:format("Error: ~p~n",Error)
 	    end,
@@ -119,6 +125,44 @@ move(Pid, X, Y, Z, Grounded) ->
 
 quit(Pid) ->
     Pid ! {to_server,{disconnect,[{reason,"done"}]}}.
+
+handle_results(Sock,Results) ->
+    case Results of
+	[] ->
+	    ok;
+	[Message|RemainingResults] -> handle_message(Sock,Message),
+				     handle_results(Sock,RemainingResults)
+    end.
+
+handle_message(Sock,Message) ->
+    case Message of
+	{player_position_and_look,Values} ->
+	    io:format("From Server: ~p~n",[Message]),
+	    [{x,X},
+	     {stance,Stance},
+	     {y,Y},
+	     {z,Z},
+	     {yaw,Yaw},
+	     {pitch,Pitch},
+	     {on_ground,Grounded}] = Values,
+	    PositionAndLookPacket = mcp:write_packet({player_position_and_look,
+						      [{x,X},
+						       {y,Y},
+						       {stance,Stance},
+						       {z,Z},
+						       {yaw,Yaw},
+						       {pitch,Pitch},
+						       {on_ground,Grounded}]}),
+	    ok = gen_tcp:send(Sock, PositionAndLookPacket);
+	{chat_message,Values} ->
+		io:format("From Server: ~p~n",[Values]);
+	{entity_look_and_relative_move,_Values} -> ok;
+	    %io:format("From Server: ~p~n",[Message]);
+	_ -> ok
+    end.
+
+	    
+	    
     
 %%%-----------------------------------------------------------------------------
 %%% gen_server callbacks
