@@ -180,7 +180,7 @@ bool(Direction,Value) ->
 	    <<NumberValue:?MCP_BOOL_BITS/integer,Remainder/binary>> = Value,
 	    case NumberValue of
 		0 -> BoolValue = false;
-		1 -> BoolValue = true
+		_ -> BoolValue = true
 	    end,
 	    {BoolValue,Remainder}
     end.
@@ -193,8 +193,11 @@ integer_number(Direction,Value,Bits) ->
 	encode when is_integer(Value) ->
 	    <<Value:Bits/integer>>;
 	decode when is_binary(Value) ->
-	    <<NumberValue:Bits/integer,Remainder/binary>>=Value,
-	    {NumberValue,Remainder}
+	    case Value of 
+		<<NumberValue:Bits/integer,Remainder/binary>> -> 
+		    {NumberValue,Remainder};
+		_ -> throw({int_parse_error,Value})
+	    end
     end.
 
 float_number(Direction,Value,Bits) ->
@@ -204,8 +207,11 @@ float_number(Direction,Value,Bits) ->
 	encode when is_float(Value) ->
 	    <<Value:Bits/float>>;
 	decode when is_binary(Value) ->
-	    <<NumberValue:Bits/float,Remainder/binary>>=Value,
-	    {NumberValue,Remainder}
+	    case Value of
+		<<NumberValue:Bits/float,Remainder/binary>> ->
+		    {NumberValue,Remainder};
+		_  -> throw({float_parse_error,Value})
+	    end
     end.
     
 
@@ -297,8 +303,13 @@ mc_binary_to_string(MCBinary)->
     case StringRemainder of
 	<<String:Length/binary,Remainder/binary>> ->
 	    StringBin = unicode:characters_to_binary(String,?MCP_ENCODING,?NATIVE_ENCODING),
-	    Value = binary:bin_to_list(StringBin),
-	    {Value,Remainder};
+	    case StringBin of
+		{error,_,_} -> 
+		    throw({parse_error,MCBinary});
+		_ -> 
+		    Value = binary:bin_to_list(StringBin),
+		    {Value,Remainder}
+	    end;
 	_ -> throw({parse_error,MCBinary})
     end.
     
@@ -365,8 +376,14 @@ get_encode_name(ID,Pos)->
 
 get_decode_name(ID,Pos)->
     DecodeNames = get_decode_names(ID),
-    DecodeName = lists:nth(Pos+?MC_PROTO_VALUE_POS_OFFSET,DecodeNames),
-    DecodeName.
+    case DecodeNames of
+	[] -> 
+	    io:format("Error decoding ~p: bad schema",ID),
+	    throw({bad_schema,ID});
+	_ ->
+	    DecodeName = lists:nth(Pos+?MC_PROTO_VALUE_POS_OFFSET,DecodeNames),
+	    DecodeName
+    end.
     
 	    
 

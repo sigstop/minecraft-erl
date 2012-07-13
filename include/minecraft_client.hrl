@@ -14,6 +14,6 @@
 -define(DEFAULT_MC_PROTO_VERSION, 29).
 
 
-
-	
+%% Records
+-record(mcc_state,{eid,eid_watch_list,socket,pos_look,lp_packet,initalized}).
 

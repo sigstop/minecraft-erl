@@ -27,7 +27,7 @@
 {%% Login Request 0x01
  login_request,
  [proto_version, username, empty,      empty,       empty,     empty,      empty, empty],  %% To Server (Encode)
- [entity_id,     empty,    level_type, server_mode, dimension, difficulty, empty, max_players],  %% From Server (Decode)
+ [eid,           empty,    level_type, server_mode, dimension, difficulty, empty, max_players],  %% From Server (Decode)
  [int,           string,   string,     int,         int,       byte,       ubyte, ubyte],
  1},
 
@@ -55,7 +55,7 @@
 {%% Entity Equipment 0x05
  entity_equipment,
  [], %% One way
- [entity_id, slot,  item_id, damage],  %% From Server (Decode)
+ [eid, slot,  item_id, damage],  %% From Server (Decode)
  [int,       short, short,   short],
  5},
 
@@ -66,16 +66,23 @@
  [int, int, int],
  16#06},
 
+{%% Player 0x0A
+ player,
+ [on_ground], %% To Server
+ [on_ground], %% From Server
+ [bool],
+ 16#0a},
+
 {%% Player Position 0x0B
  player_position,
- [],  %% One Way
- [x,      y,      stance, z,      on_ground],  %% From Server
+ [x,      y,      stance, z,      on_ground],  %% To Server
+ [x,      stance, y,      z,      on_ground],  %% From Server
  [double, double, double, double, bool],
  16#0b},
-
-{%% Player Position 0x0C
+		   
+{%% Player Look 0x0C
  player_look,
- [], %% One Way
+ [yaw,   pitch, on_ground], %% To Server
  [yaw,   pitch, on_ground], %% From Server
  [float, float, bool],
  16#0c},  
@@ -90,14 +97,14 @@
 {%% Spawn Mob 0x18
  spawn_mob,
  [], %% One way
- [entity_id, type, x,   y,   z,   yaw,  pitch, head_yaw, metadata], %% From Server
- [int,       byte, int, int, int, byte, byte,  byte,     byte],
+ [eid, type, x,   y,   z,   yaw,  pitch, head_yaw, metadata], %% From Server
+ [int, byte, int, int, int, byte, byte,  byte,     byte],
  16#18},
 
 {%% Entity Velocity 0x1C
  entity_velocity,
  [], %% One way
- [entity_id, x,     y,     z], %% From Server
+ [eid, x,     y,     z], %% From Server
  [int,       short, short, short],
  16#1c},
 
@@ -125,7 +132,7 @@
 {%% Entity Teleport 0x22
  entity_teleport,
  [], %% One way
- [eid, x,   y,   z,   yaw,  pitch],  %% From Server
+ [eid, x,     y,     z,     yaw,  pitch],  %% From Server
  [int, int, int, int, byte, byte],
  16#22},
 
