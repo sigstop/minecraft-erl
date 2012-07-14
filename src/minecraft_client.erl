@@ -220,7 +220,7 @@ move(Pid, X, Y, Z, Grounded) ->
     Pid ! {to_server,{player_position,[{x,X},{y,Y},{stance,Y+1},{z,Z},{on_ground,Grounded}]}}.
 
 move_x(Pid, DeltaX) ->
-    Pid ! {move_x,DeltaX}.
+    Pid ! {move_x,DeltaX}. 
 
 move_z(Pid, DeltaZ) ->
     Pid ! {move_z,DeltaZ}.
@@ -270,13 +270,75 @@ handle_message(Client,Message) ->
 	{_Type,[{eid,EID}|_Rest]} ->
 	    case lists:member(EID,Client#mcc_state.eid_watch_list) of
 		true ->
-		    io:format("About ~p: ~p~n",[EID,Message]);
+		    io:format("About ~p: ~p~n",[EID,Message]),
+		    watch_entity(Client,Message);
 		_ -> ok
 	    end;
 	_ -> ok
     end.
 
-	    
+watch_entity(Client,Message) ->
+    case Message of
+	{entity_relative_move,[{eid,_EID},{dx,EntityAbIntDx},{dy,EntityAbIntDy},{dz,EntityAbIntDz}]} ->
+	    {player_position_and_look,
+	     [{x,X},
+	      {y,Y},
+	      {stance,Stance},
+	      {z,Z},
+	      {yaw,Yaw},
+	      {pitch,Pitch},
+	      {on_ground,Grounded}]} = Client#mcc_state.pos_look,
+	    NewX = X + (EntityAbIntDx/32.0),
+	    NewY = Y + (EntityAbIntDy/32.0),
+	    NewZ = Z + (EntityAbIntDz/32.0),
+	    StanceDelta = Stance - Y,
+	    NewStance = NewY + StanceDelta,
+	    NewLP = {player_position_and_look,[{x,NewX},
+					       {y,NewY},
+					       {stance,NewStance},
+					       {z,NewZ},
+					       {yaw,Yaw},
+					       {pitch,Pitch},
+					       {on_ground,Grounded}]},
+	    NewLPPacket = mcp:write_packet(NewLP),
+	    io:format("To Server: ~p~n",[NewLPPacket]),
+	    ok = gen_tcp:send(Client#mcc_state.socket,NewLPPacket),
+	    UpdatedClient = Client#mcc_state{pos_look=NewLP,lp_packet=NewLPPacket},
+	    run(UpdatedClient);
+%	{entity_teleport,[{eid,_EID},
+%			  {x,EntityAbIntX},
+%			  {y,EntityAbIntY},
+%			  {z,EntityAbIntZ},
+%			  {yaw,_Yaw},
+%			  {pitch,_pitch}]} ->
+%	    {player_position_and_look,
+%	     [{x,_X},
+%	      {y,_Y},
+%	      {stance,_Stance},
+%	      {z,_Z},
+%	      {yaw,Yaw},
+%	      {pitch,Pitch},
+%	      {on_ground,Grounded}]} = Client#mcc_state.pos_look,
+%	    NewX = mc_util:abint2float(EntityAbIntX) + 0.5,
+%	    NewY = mc_util:abint2float(EntityAbIntY),
+%	    NewZ = mc_util:abint2float(EntityAbIntZ) + 0.5,
+%	    NewStance = NewY + 1.5,
+%	    NewLP = {player_position_and_look,[{x,NewX},
+%					       {y,NewY},
+%					       {stance,NewStance},
+%					       {z,NewZ},
+%					       {yaw,Yaw},
+%					       {pitch,Pitch},
+%					       {on_ground,Grounded}]},
+%	    NewLPPacket = mcp:write_packet(NewLP),
+%	    io:format("To Server: ~p~n",[NewLPPacket]),
+%	    ok = gen_tcp:send(Client#mcc_state.socket,NewLPPacket),
+%	    UpdatedClient = Client#mcc_state{pos_look=NewLP,lp_packet=NewLPPacket},
+%	    run(UpdatedClient);
+	_ -> ok
+    end.
+
+	
 	    
     
 %%%-----------------------------------------------------------------------------
