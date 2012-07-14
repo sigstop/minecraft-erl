@@ -24,7 +24,7 @@
 -define(MCP_LONG_BITS,64).
 -define(MCP_FLOAT_BITS,32).
 -define(MCP_DOUBLE_BITS,64).
--define(MCP_BYTE_BITS,7).
+-define(MCP_BYTE_BITS,8).
 -define(MCP_SIGN_BIT,1).
 -define(MCP_UBYTE_BITS,8).
 -define(MCP_MSG_TYPE_BITS,8).
@@ -249,24 +249,24 @@ string16(Direction,Value) ->
 byte(Direction,Value) ->
     case Direction of
 	encode when Value == empty ->
-	    <<0:?MCP_SIGN_BIT,0:?MCP_BYTE_BITS>>;
+	    <<0:?MCP_BYTE_BITS>>;
 	encode when is_integer(Value), 
 		    Value > -128, 
 		    Value < 128->
 	    case Value < 0 of
 		true ->
-		    AbsValue = 0 - Value,
-		    <<1:?MCP_SIGN_BIT,AbsValue:?MCP_BYTE_BITS>>;
+		    IntValue = 16#FF + Value, % note Value is less than zero so this is subtraction.
+		    <<IntValue:?MCP_BYTE_BITS>>;
 		false ->
-		    <<0:?MCP_SIGN_BIT,Value:?MCP_BYTE_BITS>>
+		    <<Value:?MCP_BYTE_BITS>>
 	    end;
 	decode when is_binary(Value) ->
-	    <<Sign:?MCP_SIGN_BIT,AbsValue:?MCP_BYTE_BITS,Remainder/binary>> = Value,
-	    case Sign == 1 of
-		true -> 
-		    ByteValue = 0-AbsValue;
+	    <<IntValue:?MCP_BYTE_BITS,Remainder/binary>> = Value,
+	    case IntValue >= 16#80 of
+		true ->
+		    ByteValue = 0-(16#FF-IntValue);
 		false ->
-		    ByteValue = AbsValue
+		    ByteValue = IntValue
 	    end,
 	    {ByteValue,Remainder}
     end.
